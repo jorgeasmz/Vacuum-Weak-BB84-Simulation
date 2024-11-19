@@ -14,7 +14,7 @@ class Receiver(Role):
             num_bits (int): Number of bits to be transmitted.
         """
         super().__init__('Receiver')
-        self.bases = self.random_selection(num_elements=num_bits, seed=18)
+        self.bases = self.random_bit_selection(num_elements=num_bits)
         self.measurement_results = []
         self.states = []
 

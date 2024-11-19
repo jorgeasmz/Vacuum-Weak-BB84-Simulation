@@ -11,29 +11,34 @@ class Role:
         """Perform the role's action."""
         raise NotImplementedError("This method should be implemented by subclasses")
     
-    
-    def random_selection(self, num_elements: int, seed: int = None) -> list:
+    def random_bit_selection(self, num_elements: int, seed: int = None) -> list:
         """
-        Generate a list of random values based on a seed.
+        Generate a list of random bits (0s and 1s) based on a seed.
         
         Args:
             seed (int): The seed for random number generation.
             num_elements (int): The number of elements to generate.
         
         Returns:
-            list: A list of random values.
+            list: A list of random bits (0s and 1s).
         """
-       
         random.seed(seed)
-
-        if seed is not None and seed > 50:
-            # Generate a list of intensity types
-            return [
-                'signal' if random.random() < 0.875 else 
-                'decoy' if random.random() < 0.9375 else 
-                'vacuum' for _ in range(num_elements)
-            ]
+        return [random.choice([0, 1]) for _ in range(num_elements)]
+    
+    def random_state_selection(self, num_elements: int, seed: int = None) -> list:
+        """
+        Generate a list of random state types ('signal', 'decoy', 'vacuum') based on a seed.
         
-        else:
-            # Generate a list of 0s and 1s
-            return [random.choice([0, 1]) for _ in range(num_elements)]
+        Args:
+            seed (int): The seed for random number generation.
+            num_elements (int): The number of elements to generate.
+        
+        Returns:
+            list: A list of random state types.
+        """
+        random.seed(seed)
+        return [
+            'signal' if random.random() < 0.875 else 
+            'decoy' if random.random() < 0.9375 else 
+            'vacuum' for _ in range(num_elements)
+        ]

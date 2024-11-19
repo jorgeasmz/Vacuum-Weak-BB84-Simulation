@@ -26,7 +26,7 @@ class Eavesdropper(Role):
 
     def perform_action(self, states):
         """
-        Eavesdropper performs photon number splitting attack
+        Eavesdropper performs photon number splitting attack.
 
         Args:
             states (list): List of quantum states to be intercepted.
@@ -47,7 +47,7 @@ class Eavesdropper(Role):
                 self.measurement_results.append('Blocked')
                 state = State(bit_value=random.choice([0, 1]), 
                               basis=random.choice([0, 1]), 
-                              mean_photon_number=10e-5)
+                              state_type='vacuum')
 
             elif state.num_qubits > 1:
                 # Eve extracts one photon and sends n - 1 photons to Bob
@@ -80,10 +80,10 @@ class Eavesdropper(Role):
 
     def post_process(self, sender_bases):
         """
-        Post-process the intercepted states based on Alice's bases.
+        Post-process the intercepted states based on sender's bases.
 
         Args:
-            sender_bases (list): Bases used by Alice to encode the states.
+            sender_bases (list): Bases used by the sender to encode the states.
         """
         for i, result in enumerate(self.measurement_results):
 

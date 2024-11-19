@@ -1,5 +1,5 @@
 from qiskit import QuantumCircuit, QuantumRegister, ClassicalRegister
-from typing import Dict
+from config import Config
 
 import numpy as np
 import random
@@ -8,8 +8,7 @@ class State:
     """
     A class representing a quantum state for an experimental BB84 protocol implementation.
     """
-    
-    def __init__(self, bit_value: int, basis: int, mean_photon_number = float):
+    def __init__(self, bit_value: int, basis: int, state_type: str):
         """
         Initialize a quantum state for BB84 protocol.
         
@@ -22,11 +21,14 @@ class State:
             raise ValueError("Bit value must be 0 or 1")
         if basis not in [0, 1]:
             raise ValueError("Basis must be 0 (rectilinear) or 1 (diagonal)")
+        if state_type not in ['signal', 'decoy', 'vacuum']:
+            raise ValueError("State type must be 'signal', 'decoy', or 'vacuum'")
             
         self.bit_value = bit_value
         self.basis = basis
-        self.mean_photon_number = mean_photon_number
-        
+
+        self.mean_photon_number = Config.state_type_to_mean_photon_number(state_type)
+
         # Determine the number of qubits based on Poisson distribution
         self.num_qubits = np.random.poisson(self.mean_photon_number)
         
@@ -107,24 +109,6 @@ class State:
         majority_bit_value = max(set(bit_values), key=bit_values.count)
 
         return majority_bit_value
-    
-    def get_photon_number_distribution(self) -> Dict[int, float]:
-        """
-        Calculate the photon number distribution based on Poisson statistics.
-        
-        Returns:
-            Dict[int, float]: Dictionary mapping photon numbers to their probabilities
-        """
-        mean = self.mean_photon_number
-        max_photons = 10  # Maximum number of photons to consider
-        distribution = {}
-        
-        for n in range(max_photons):
-            # Calculate Poisson probability: P(n) = μⁿe^(-μ)/n!
-            prob = (mean**n * np.exp(-mean)) / np.math.factorial(n)
-            distribution[n] = prob
-            
-        return distribution    
 
     def add_noise(self, error_rate: float) -> None:
         """
