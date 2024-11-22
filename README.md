@@ -31,17 +31,17 @@ List any software or tools required to run the project:
    git clone https://github.com/your_username/project_name.git
    cd project_name
 2. Create a virtual environment and activate it:
-  ```bash
-  python3 -m venv venv
-  source venv/bin/activate
+   ```bash
+   python3 -m venv venv
+   source venv/bin/activate
 3. Install the required dependencies:
-  ```bash
-  pip install -r requirements.txt
+   ```bash
+   pip install -r requirements.txt
 
 ## Usage
 1. Run the main script to simulate the BB84 protocol:
-  ```bash
-  python main.py
+   ```bash
+   python main.py
 2. Modify the parameters in main.py to customize the simulation.
 
 ## Project Structure
