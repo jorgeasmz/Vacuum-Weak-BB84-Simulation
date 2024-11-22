@@ -45,7 +45,6 @@ List any software or tools required to run the project:
 2. Modify the parameters in main.py to customize the simulation.
 
 ## Project Structure
-      ```bash
       project_name/
       │
       ├── roles/
