@@ -45,18 +45,19 @@ List any software or tools required to run the project:
 2. Modify the parameters in main.py to customize the simulation.
 
 ## Project Structure
-project_name/
-│
-├── roles/
-│   ├── eavesdropper.py
-│   ├── receiver.py
-│   ├── role.py
-│   └── sender.py
-│
-├── config.py
-├── main.py
-├── protocol.py
-├── state.py
+      ```bash
+      project_name/
+      │
+      ├── roles/
+      │   ├── eavesdropper.py
+      │   ├── receiver.py
+      │   ├── role.py
+      │   └── sender.py
+      │
+      ├── config.py
+      ├── main.py
+      ├── protocol.py
+      ├── state.py
 
 ## Technologies
 - **Python:** Programming language used for the implementation.
