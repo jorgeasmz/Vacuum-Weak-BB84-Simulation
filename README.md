@@ -9,8 +9,7 @@ This project implements an experimental implementation of the BB84 Quantum Key D
 3. [Usage](#usage)
 4. [Project Structure](#project-structure)
 5. [Technologies](#technologies)
-6. [Contributing](#contributing)
-7. [License](#license)
+6. [License](#license)
 
 ## Features
 - **Quantum State Preparation**: Simulates the preparation of quantum states for the BB84 protocol.
