@@ -1,4 +1,9 @@
-
+# -----------------------------------------------------------------------------
+# File Name: eavesdropper.py
+# Author: jorgeasmz
+# Date: 21/11/2024
+# Description: A class representing the eavesdropper in the BB84 protocol.
+# -----------------------------------------------------------------------------
 
 from qiskit import QuantumCircuit, QuantumRegister, ClassicalRegister
 from .role import Role

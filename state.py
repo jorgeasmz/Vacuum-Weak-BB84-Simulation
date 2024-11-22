@@ -1,3 +1,10 @@
+# -----------------------------------------------------------------------------
+# File Name: state.py
+# Author: jorgeasmz
+# Date: 21/11/2024
+# Description: A class representing a quantum state for an experimental BB84 protocol implementation.
+# -----------------------------------------------------------------------------
+
 from qiskit import QuantumCircuit, QuantumRegister, ClassicalRegister
 from config import Config
 

@@ -1,3 +1,10 @@
+# -----------------------------------------------------------------------------
+# File Name: protocol.py
+# Author: jorgeasmz
+# Date: 21/11/2024
+# Description: A class to implement the Decoy States BB84 protocol.
+# -----------------------------------------------------------------------------
+
 from roles.sender import Sender
 from roles.receiver import Receiver
 from roles.eavesdropper import Eavesdropper
@@ -11,7 +18,9 @@ class Protocol:
     """
     def __init__(self, num_bits: int, use_decoy_states: bool = False, 
                  eavesdropper: bool = False, mu: float = 0.5, nu: float = 0.1, 
-                 dark_count_rate: float = 10e-5, transmittance: float = 10e-3):
+                 dark_count_rate: float = 10e-5, transmittance: float = 10e-3,
+                 signal_percentage: float = 0.875, decoy_percentage: float = 0.0625, 
+                 vacuum_percentage: float = 0.0625):
         """
         Initialize the protocol.
         
@@ -23,6 +32,9 @@ class Protocol:
             nu (float): Mean photon number for decoy states.
             dark_count_rate (float): Probability of dark counts (false detections).
             transmittance (float): The transmittance of the quantum channel.
+            signal_percentage (float): Percentage of signal states.
+            decoy_percentage (float): Percentage of decoy states.
+            vacuum_percentage (float): Percentage of vacuum states.
         """
         self.num_bits = num_bits
         self.use_decoy_states = use_decoy_states
@@ -33,7 +45,7 @@ class Protocol:
         self.transmittance = transmittance
 
         # Initialize the shared configuration
-        Config(mu=mu, nu=nu, dark_count_rate=dark_count_rate)
+        Config(mu=mu, nu=nu, dark_count_rate=dark_count_rate, signal_percentage=signal_percentage, decoy_percentage=decoy_percentage, vacuum_percentage=vacuum_percentage)
 
         self.alice = Sender(num_bits, use_decoy_states)
         self.bob = Receiver(num_bits)
@@ -81,7 +93,9 @@ class Protocol:
         """
         state_indices = [i for i, t in enumerate(self.alice.states_types) if t == state_type]
         total_state_pulses = len(state_indices)
-        detections = sum(1 for i in state_indices if self.bob.measurement_results[i] != 'No detection')
+        print(f'Total state pulses: {total_state_pulses}')
+        detections = sum(1 for i in state_indices if self.bob.measurement_results[i] != 'No detection' and self.alice.bases[i] == self.bob.bases[i])
+        print(f'Detections: {detections}')
 
         return detections / total_state_pulses if total_state_pulses > 0 else 0
     

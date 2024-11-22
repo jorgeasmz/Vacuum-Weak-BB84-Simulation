@@ -58,11 +58,23 @@ def plot_yields_boxplot(signal_yields: dict, decoy_yields: dict, expected_yields
     plt.show()
 
 # Número de fotones (n) y simulaciones
-nth_photon = 4
-num_simulations = 100
+# nth_photon = 4
+# num_simulations = 100
 
 # Ejecutar múltiples simulaciones
-expected_yields, signal_yields, decoy_yields = run_multiple_simulations(nth_photon, num_simulations)
+# expected_yields, signal_yields, decoy_yields = run_multiple_simulations(nth_photon, num_simulations)
 
 # Generar gráfico de cajas
-plot_yields_boxplot(signal_yields, decoy_yields, expected_yields)
+# plot_yields_boxplot(signal_yields, decoy_yields, expected_yields)
+
+protocol = Protocol(num_bits=2000, use_decoy_states=True, eavesdropper=False, mu=0.65, nu=0.08, dark_count_rate=10e-5, transmittance=0.356, signal_percentage=0.75, decoy_percentage=0.125, vacuum_percentage=0.125)
+
+protocol.run_protocol()
+
+print(f'Signal state gain: {protocol.signal_state_gain}')
+print(f'Decoy state gain: {protocol.decoy_state_gain}')
+print(f'Signal state efficiency: {protocol.signal_state_efficiency}')
+print(f'Decoy state efficiency: {protocol.decoy_state_efficiency}')
+print(f'Expected yields: {protocol.expected_yields}')
+print(f'Signal state yields: {protocol.signal_state_yields}')
+print(f'Decoy state yields: {protocol.decoy_state_yields}')

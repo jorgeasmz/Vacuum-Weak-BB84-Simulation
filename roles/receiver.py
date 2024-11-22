@@ -1,4 +1,9 @@
-
+# -----------------------------------------------------------------------------
+# File Name: receiver.py
+# Author: jorgeasmz
+# Date: 21/11/2024
+# Description: A class representing the receiver in the BB84 protocol.
+# -----------------------------------------------------------------------------
 
 from .role import Role
 

@@ -1,4 +1,9 @@
-
+# -----------------------------------------------------------------------------
+# File Name: sender.py
+# Author: jorgeasmz
+# Date: 21/11/2024
+# Description: A class representing the sender in the BB84 protocol.
+# -----------------------------------------------------------------------------
 
 from .role import Role
 from state import State

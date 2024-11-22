@@ -1,3 +1,12 @@
+# -----------------------------------------------------------------------------
+# File Name: role.py
+# Author: jorgeasmz
+# Date: 21/11/2024
+# Description: A class representing a role in the BB84 protocol.
+# -----------------------------------------------------------------------------
+
+from config import Config
+
 import random
 
 class Role:
@@ -37,8 +46,20 @@ class Role:
             list: A list of random state types.
         """
         random.seed(seed)
-        return [
-            'signal' if random.random() < 0.875 else 
-            'decoy' if random.random() < 0.9375 else 
-            'vacuum' for _ in range(num_elements)
-        ]
+        
+        config = Config.get_instance()
+        signal_percentage = config.signal_percentage
+        decoy_percentage = config.decoy_percentage
+        vacuum_percentage = config.vacuum_percentage
+
+        states_types = []
+        for _ in range(num_elements):
+            rand_val = random.random()
+            if rand_val < signal_percentage:
+                states_types.append('signal')
+            elif rand_val < signal_percentage + decoy_percentage:
+                states_types.append('decoy')
+            else:
+                states_types.append('vacuum')
+        
+        return states_types
