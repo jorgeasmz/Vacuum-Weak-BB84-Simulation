@@ -18,7 +18,7 @@ def run_multiple_simulations(nth_photon: int, num_simulations: int):
     decoy_yields = {f'Y_{n}': [] for n in range(1, nth_photon + 1)}
 
     for _ in range(num_simulations):
-        protocol = Protocol(num_bits=1000, use_decoy_states=True, eavesdropper=False)
+        protocol = Protocol(num_bits=10000, use_decoy_states=True, eavesdropper=True, mu=0.65, nu=0.08, dark_count_rate=10e-5, transmittance=0.356, signal_percentage=0.75, decoy_percentage=0.125, vacuum_percentage=0.125)
         protocol.run_protocol()
         for n in range(1, nth_photon + 1):
             expected_yields[f'Y_{n}'].append(protocol.expected_yields[n - 1])
@@ -57,19 +57,47 @@ def plot_yields_boxplot(signal_yields: dict, decoy_yields: dict, expected_yields
     plt.tight_layout()
     plt.show()
 
-# Número de fotones (n) y simulaciones
-# nth_photon = 4
-# num_simulations = 100
+def plot_single_run_yields_boxplot(protocol: Protocol, nth_photon: int):
+    """
+    Generates a box plot for the yields of a single run.
 
-# Ejecutar múltiples simulaciones
+    Args:
+        protocol (Protocol): The protocol instance after running.
+        nth_photon (int): Maximum number of photons (n) to analyze.
+    """
+    n_values = range(1, nth_photon + 1)
+    expected_yields = protocol.expected_yields[:nth_photon]
+    signal_yields = protocol.signal_state_yields[:nth_photon]
+    decoy_yields = protocol.decoy_state_yields[:nth_photon]
+
+    data = [expected_yields, signal_yields, decoy_yields]
+    labels = ['Expected Yields', 'Signal Yields', 'Decoy Yields']
+
+    plt.figure(figsize=(10, 6))
+    plt.boxplot(data, showmeans=True, patch_artist=True)
+    plt.xticks(range(1, len(labels) + 1), labels, rotation=45)
+    plt.ylabel('Yield')
+    plt.title('Yields for a Single Run (Signal and Decoy)')
+    plt.grid(True, linestyle='--', alpha=0.7)
+    plt.tight_layout()
+    plt.show()
+
+# Número de fotones (n) y simulaciones
+nth_photon = 4
+num_simulations = 100
+
+# # Ejecutar múltiples simulaciones
 # expected_yields, signal_yields, decoy_yields = run_multiple_simulations(nth_photon, num_simulations)
 
-# Generar gráfico de cajas
+# # Generar gráfico de cajas
 # plot_yields_boxplot(signal_yields, decoy_yields, expected_yields)
 
-protocol = Protocol(num_bits=2000, use_decoy_states=True, eavesdropper=False, mu=0.65, nu=0.08, dark_count_rate=10e-5, transmittance=0.356, signal_percentage=0.75, decoy_percentage=0.125, vacuum_percentage=0.125)
-
+# Ejecutar una única corrida del protocolo
+protocol = Protocol(num_bits=100, use_decoy_states=True, eavesdropper=False, mu=0.65, nu=0.08, dark_count_rate=10e-5, transmittance=0.356, signal_percentage=0.75, decoy_percentage=0.125, vacuum_percentage=0.125)
 protocol.run_protocol()
+
+# Generar gráfico de yields n-fotónicos de una única corrida
+plot_single_run_yields_boxplot(protocol, nth_photon)
 
 print(f'Signal state gain: {protocol.signal_state_gain}')
 print(f'Decoy state gain: {protocol.decoy_state_gain}')

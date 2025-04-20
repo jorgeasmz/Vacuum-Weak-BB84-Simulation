@@ -82,7 +82,8 @@ class State:
         """
         if self.num_qubits == 0:
             # Simulate a dark count (false detection) with a certain probability (equal to the dark count rate)
-            if np.random.random() < 10e-5:
+            config = Config.get_instance()
+            if np.random.random() < config.dark_count_rate:
                 return np.random.choice([0, 1])
             else:
                 return None  # No detection

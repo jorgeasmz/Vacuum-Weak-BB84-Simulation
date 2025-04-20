@@ -50,7 +50,6 @@ class Role:
         config = Config.get_instance()
         signal_percentage = config.signal_percentage
         decoy_percentage = config.decoy_percentage
-        vacuum_percentage = config.vacuum_percentage
 
         states_types = []
         for _ in range(num_elements):
