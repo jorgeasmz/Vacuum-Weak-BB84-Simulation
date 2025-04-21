@@ -93,10 +93,11 @@ def get_protocol_parameters():
         'mu': 0.65,
         'nu': 0.08,
         'dark_count_rate': 10e-5,
-        'channel_loss': 5.6,
+        'channel_loss': 0.2,
         'channel_length': 20.0,
         'receiver_loss': 3.5,
-        'detection_efficiency': 0.10,
+        'detector_efficiency': 0.10,
+        'detector_error_rate': 0.014,
         'signal_percentage': 0.75,
         'decoy_percentage': 0.125,
         'vacuum_percentage': 0.125
@@ -113,7 +114,7 @@ def get_protocol_parameters():
         default_params['channel_loss'] = float(input("Channel loss (dB): "))
         default_params['channel_length'] = float(input("Channel length (km): "))
         default_params['receiver_loss'] = float(input("Receiver loss (dB): "))
-        default_params['detection_efficiency'] = float(input("Detection efficiency: "))
+        default_params['detector_efficiency'] = float(input("Detection efficiency: "))
         default_params['signal_percentage'] = float(input("Signal state percentage: "))
         default_params['decoy_percentage'] = float(input("Decoy state percentage: "))
         default_params['vacuum_percentage'] = float(input("Vacuum state percentage: "))

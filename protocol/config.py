@@ -8,13 +8,23 @@
 class Config:
     _instance = None
 
-    def __new__(cls, mu=None, nu=None, dark_count_rate=None, signal_percentage=None, decoy_percentage=None, vacuum_percentage=None):
+    def __new__(cls, 
+                mu=None, 
+                nu=None, 
+                dark_count_rate=None, 
+                detector_efficiency=None,
+                detector_error_rate=None,
+                signal_percentage=None, 
+                decoy_percentage=None, 
+                vacuum_percentage=None):
         
         if cls._instance is None:
             cls._instance = super(Config, cls).__new__(cls)
             cls._instance.mu = mu
             cls._instance.nu = nu
             cls._instance.dark_count_rate = dark_count_rate
+            cls._instance.detector_efficiency = detector_efficiency
+            cls._instance.detector_error_rate = detector_error_rate
             cls._instance.signal_percentage = signal_percentage
             cls._instance.decoy_percentage = decoy_percentage
             cls._instance.vacuum_percentage = vacuum_percentage

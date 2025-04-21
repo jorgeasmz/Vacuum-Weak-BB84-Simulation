@@ -70,53 +70,96 @@ class State:
             for qubit in range(self.num_qubits):
                 self.circuit.h(self.qr[qubit])
 
-    def measure_state(self, measurement_basis: int) -> int:
+    def measure_state(self, measurement_basis: int):
         """
-        Measure the quantum state in the given basis.
+        Measure the quantum state in the given basis, combining Qiskit quantum simulation
+        with realistic detector behavior.
         
         Args:
             measurement_basis (int): Basis to measure in (0 for rectilinear, 1 for diagonal)
-            
+                
         Returns:
-            int: Measured bit value
+            int or str: Measured bit value (0/1), 'No detection' or 'Wrong basis'
         """
+        config = Config.get_instance()
+        
+        # Detector parameters
+        dark_count_prob = getattr(config, 'dark_count_rate')
+        efficiency = getattr(config, 'detector_efficiency')
+        error_prob = getattr(config, 'detector_error_rate')
+        
+        # Check if bases match
+        if measurement_basis != self.basis:
+            return "Wrong basis"
+        
+        # No photons case
         if self.num_qubits == 0:
-            # Simulate a dark count (false detection) with a certain probability (equal to the dark count rate)
-            config = Config.get_instance()
-            if np.random.random() < config.dark_count_rate:
+            # Consider only dark count possibility
+            if np.random.random() < dark_count_prob:
+                return np.random.choice([0, 1])  # 50% chance for each value
+            else:
+                return "No detection"
+        
+        # Simulate detector efficiency for each photon
+        detected_photons = 0
+        error_detected_photons = 0
+        
+        for _ in range(self.num_qubits):
+            # Determine if photon is detected based on efficiency
+            if np.random.random() < efficiency:
+                # Determine if there's a detection error
+                if np.random.random() < error_prob:
+                    error_detected_photons += 1
+                else:
+                    detected_photons += 1
+        
+        # Handle detection outcomes
+        if error_detected_photons > 0:
+            # At least one photon incorrectly detected - bit flip
+            return (self.bit_value + 1) % 2
+        
+        elif detected_photons == 0:
+            # No photons detected - consider dark count
+            if np.random.random() < dark_count_prob:
                 return np.random.choice([0, 1])
             else:
-                return None  # No detection
+                return "No detection"
+        
+        else:
+            # At least one photon detected correctly
+            # Perform actual quantum measurement with Qiskit
+            
+            # Create a new circuit for measurement
+            meas_circuit = self.circuit.copy()
+            
+            # Apply basis transformation if needed
+            if measurement_basis == 1:
+                for qubit in range(self.num_qubits):
+                    meas_circuit.h(self.qr[qubit])
+                    
+            # Add measurement
+            meas_circuit.measure(self.qr, self.cr)
+            
+            # Simulate the measurement
+            from qiskit import transpile
+            from qiskit_aer import Aer
 
-        # Create a new circuit for measurement
-        meas_circuit = self.circuit.copy()
-        
-        # If measuring in diagonal basis, apply H gate before measurement
-        if measurement_basis == 1:
-            for qubit in range(self.num_qubits):
-                meas_circuit.h(self.qr[qubit])
-                
-        # Add measurement
-        meas_circuit.measure(self.qr, self.cr)
-        
-        # Simulate the measurement
-        from qiskit import transpile
-        from qiskit_aer import Aer
-
-        backend = Aer.get_backend('qasm_simulator')
-        transpiled_circuits = transpile(meas_circuit, backend)
-        job = backend.run(transpiled_circuits, shots=1)
-        result = job.result()
-        counts = result.get_counts(meas_circuit)
-        
-        # Return the measured bit value
-        measured_bitstring = list(counts.keys())[0]
-        
-        # Return the majority bit value if there are multiple qubits
-        bit_values = [int(bit) for bit in measured_bitstring]
-        majority_bit_value = max(set(bit_values), key=bit_values.count)
-
-        return majority_bit_value
+            backend = Aer.get_backend('qasm_simulator')
+            transpiled_circuits = transpile(meas_circuit, backend)
+            job = backend.run(transpiled_circuits, shots=1)
+            result = job.result()
+            counts = result.get_counts(meas_circuit)
+            
+            # Get the measured bit value
+            measured_bitstring = list(counts.keys())[0]
+            bit_values = [int(bit) for bit in measured_bitstring]
+            majority_bit_value = max(set(bit_values), key=bit_values.count)
+            
+            # Consider dark count possibly altering the result
+            if np.random.random() < (dark_count_prob * 0.5):
+                return (majority_bit_value + 1) % 2  # Dark count error
+            else:
+                return majority_bit_value
 
     def add_noise(self, error_rate: float) -> None:
         """

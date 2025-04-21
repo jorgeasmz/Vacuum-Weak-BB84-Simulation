@@ -38,7 +38,7 @@ class Receiver(Role):
         i = 0
         for state in states:
             result = state.measure_state(self.bases[i])
-            self.measurement_results.append(result if result is not None else 'No detection')
-            self.states.append(states)
+            self.measurement_results.append(result)
+            self.states.append(state)
             i += 1
             

@@ -34,7 +34,8 @@ def main():
                         channel_loss=params['channel_loss'],
                         channel_length=params['channel_length'],
                         receiver_loss=params['receiver_loss'],
-                        detection_efficiency=params['detection_efficiency'],
+                        detector_efficiency=params['detector_efficiency'],
+                        detector_error_rate=params['detector_error_rate'],
                         signal_percentage=params['signal_percentage'], 
                         decoy_percentage=params['decoy_percentage'], 
                         vacuum_percentage=params['vacuum_percentage'])

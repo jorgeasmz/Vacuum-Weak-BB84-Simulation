@@ -23,10 +23,11 @@ class Protocol:
                  mu: float = 0.65, 
                  nu: float = 0.08, 
                  dark_count_rate: float = 10e-5, 
-                 channel_loss: float = 5.6, 
+                 channel_loss: float = 0.2, 
                  channel_length: float = 20.0, 
                  receiver_loss: float = 3.5,
-                 detection_efficiency: float = 0.10,
+                 detector_efficiency: float = 0.10, 
+                 detector_error_rate: float = 0.01,
                  signal_percentage: float = 0.75, 
                  decoy_percentage: float = 0.125, 
                  vacuum_percentage: float = 0.125):
@@ -39,11 +40,12 @@ class Protocol:
             eavesdropper (bool): Whether to include an eavesdropper.
             mu (float): Mean photon number for signal states.
             nu (float): Mean photon number for decoy states.
-            dark_count_rate (float): Probability of dark counts (false detections).
-            channel_loss (float): Loss in the quantum channel in dB/km.
-            channel_length (float): Length of the quantum channel in km.
-            receiver_loss (float): Loss in the receiver in dB.
-            detection_efficiency (float): Efficiency of the detector.
+            dark_count_rate (Y_0)(float): Probability of dark counts (false detections).
+            channel_loss (α)(float): Loss in the quantum channel in dB/km.
+            channel_length (l) (float): Length of the quantum channel in km.
+            receiver_loss (float): Loss in the receiver's side in dB.
+            detector_efficiency (η_D) (float): Efficiency of the detector.
+            detector_error_rate (e_d) (float): Error rate of the detector.
             signal_percentage (float): Percentage of signal states.
             decoy_percentage (float): Percentage of decoy states.
             vacuum_percentage (float): Percentage of vacuum states.
@@ -54,12 +56,14 @@ class Protocol:
         self.mu = mu
         self.nu = nu
         self.dark_count_rate = dark_count_rate
-        self.transmittance = 10**(-(channel_loss * channel_length)/10 ) * (10**(-(receiver_loss)/10 ) * detection_efficiency)
+        self.transmittance = 10**(-(channel_loss * channel_length)/10 ) * (10**(-(receiver_loss)/10 ) * detector_efficiency)
 
         # Initialize the shared configuration
         Config(mu=mu, 
                nu=nu, 
                dark_count_rate=dark_count_rate, 
+               detector_efficiency=detector_efficiency,
+               detector_error_rate=detector_error_rate,
                signal_percentage=signal_percentage, 
                decoy_percentage=decoy_percentage, 
                vacuum_percentage=vacuum_percentage)
