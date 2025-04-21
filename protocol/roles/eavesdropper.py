@@ -7,7 +7,7 @@
 
 from qiskit import QuantumCircuit, QuantumRegister, ClassicalRegister
 from .role import Role
-from state import State
+from protocol.state import State
 
 import random
 

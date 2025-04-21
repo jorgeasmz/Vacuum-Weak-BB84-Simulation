@@ -6,7 +6,7 @@
 # -----------------------------------------------------------------------------
 
 from .role import Role
-from state import State
+from protocol.state import State
 
 class Sender(Role):
     """

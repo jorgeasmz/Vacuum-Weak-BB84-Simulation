@@ -6,7 +6,7 @@
 # -----------------------------------------------------------------------------
 
 from qiskit import QuantumCircuit, QuantumRegister, ClassicalRegister
-from config import Config
+from .config import Config
 
 import numpy as np
 import random

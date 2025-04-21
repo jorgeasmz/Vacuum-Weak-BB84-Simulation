@@ -5,7 +5,7 @@
 # Description: A class representing a role in the BB84 protocol.
 # -----------------------------------------------------------------------------
 
-from config import Config
+from protocol.config import Config
 
 import random
 

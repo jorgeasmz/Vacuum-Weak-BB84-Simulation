@@ -5,10 +5,10 @@
 # Description: A class to implement the Decoy States BB84 protocol.
 # -----------------------------------------------------------------------------
 
-from roles.sender import Sender
-from roles.receiver import Receiver
-from roles.eavesdropper import Eavesdropper
-from config import Config
+from .roles.sender import Sender
+from .roles.receiver import Receiver
+from .roles.eavesdropper import Eavesdropper
+from .config import Config
 
 import numpy as np
 
@@ -16,11 +16,20 @@ class Protocol:
     """
     A class to implement the Decoy States BB84 protocol.
     """
-    def __init__(self, num_bits: int, use_decoy_states: bool = False, 
-                 eavesdropper: bool = False, mu: float = 0.5, nu: float = 0.1, 
-                 dark_count_rate: float = 10e-5, transmittance: float = 10e-3,
-                 signal_percentage: float = 0.875, decoy_percentage: float = 0.0625, 
-                 vacuum_percentage: float = 0.0625):
+    def __init__(self, 
+                 num_bits: int, 
+                 use_decoy_states: bool = False, 
+                 eavesdropper: bool = False, 
+                 mu: float = 0.65, 
+                 nu: float = 0.08, 
+                 dark_count_rate: float = 10e-5, 
+                 channel_loss: float = 5.6, 
+                 channel_length: float = 20.0, 
+                 receiver_loss: float = 3.5,
+                 detection_efficiency: float = 0.10,
+                 signal_percentage: float = 0.75, 
+                 decoy_percentage: float = 0.125, 
+                 vacuum_percentage: float = 0.125):
         """
         Initialize the protocol.
         
@@ -31,7 +40,10 @@ class Protocol:
             mu (float): Mean photon number for signal states.
             nu (float): Mean photon number for decoy states.
             dark_count_rate (float): Probability of dark counts (false detections).
-            transmittance (float): The transmittance of the quantum channel.
+            channel_loss (float): Loss in the quantum channel in dB/km.
+            channel_length (float): Length of the quantum channel in km.
+            receiver_loss (float): Loss in the receiver in dB.
+            detection_efficiency (float): Efficiency of the detector.
             signal_percentage (float): Percentage of signal states.
             decoy_percentage (float): Percentage of decoy states.
             vacuum_percentage (float): Percentage of vacuum states.
@@ -42,10 +54,15 @@ class Protocol:
         self.mu = mu
         self.nu = nu
         self.dark_count_rate = dark_count_rate
-        self.transmittance = transmittance
+        self.transmittance = 10**(-(channel_loss * channel_length)/10 ) * (10**(-(receiver_loss)/10 ) * detection_efficiency)
 
         # Initialize the shared configuration
-        Config(mu=mu, nu=nu, dark_count_rate=dark_count_rate, signal_percentage=signal_percentage, decoy_percentage=decoy_percentage, vacuum_percentage=vacuum_percentage)
+        Config(mu=mu, 
+               nu=nu, 
+               dark_count_rate=dark_count_rate, 
+               signal_percentage=signal_percentage, 
+               decoy_percentage=decoy_percentage, 
+               vacuum_percentage=vacuum_percentage)
 
         self.alice = Sender(num_bits, use_decoy_states)
         self.bob = Receiver(num_bits)
@@ -93,9 +110,7 @@ class Protocol:
         """
         state_indices = [i for i, t in enumerate(self.alice.states_types) if t == state_type]
         total_state_pulses = len(state_indices)
-        print(f'Total state pulses: {total_state_pulses}')
         detections = sum(1 for i in state_indices if self.bob.measurement_results[i] != 'No detection' and self.alice.bases[i] == self.bob.bases[i])
-        print(f'Detections: {detections}')
 
         return detections / total_state_pulses if total_state_pulses > 0 else 0
     
@@ -133,12 +148,12 @@ class Protocol:
         """
         Detect the presence of an eavesdropper.
         """
-        self.expected_yields = [self.n_photon_state_yield(self.transmittance, n) for n in range(1, 5)]
+        self.expected_yields = [self.n_photon_state_yield(self.transmittance, n) for n in range(1, 6)]
 
         self.signal_state_gain = self.state_gain('signal')
         self.signal_state_efficiency = self.state_efficiency(self.signal_state_gain, 'signal')
-        self.signal_state_yields = [self.n_photon_state_yield(self.signal_state_efficiency, n) for n in range(1, 5)]
+        self.signal_state_yields = [self.n_photon_state_yield(self.signal_state_efficiency, n) for n in range(1, 6)]
 
         self.decoy_state_gain = self.state_gain('decoy')
         self.decoy_state_efficiency = self.state_efficiency(self.decoy_state_gain, 'decoy')
-        self.decoy_state_yields = [self.n_photon_state_yield(self.decoy_state_efficiency, n) for n in range(1, 5)]
+        self.decoy_state_yields = [self.n_photon_state_yield(self.decoy_state_efficiency, n) for n in range(1, 6)]

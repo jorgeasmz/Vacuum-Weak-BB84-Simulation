@@ -1,108 +1,111 @@
-from protocol import Protocol
+from protocol.protocol import Protocol
+from simulation.simulation import run_multiple_simulations
+from utils.visualization import plot_yields_boxplot
+from utils.io_utils import *
+from utils.utils import *
 
 import matplotlib.pyplot as plt
 
-def run_multiple_simulations(nth_photon: int, num_simulations: int):
-    """
-    Run the protocol multiple times to collect signal and decoy yields (Y_n).
-
-    Args:
-        n_values (int): Maximum number of photons (n) to analyze (e.g., Y_1, Y_2, ...).
-        num_simulations (int): Number of simulations to run.
-
-    Returns:
-        dict: Dictionary with lists of yields for each type ('signal' and 'decoy')..
-    """
-    expected_yields = {f'Y_{n}': [] for n in range(1, nth_photon + 1)}
-    signal_yields = {f'Y_{n}': [] for n in range(1, nth_photon + 1)}
-    decoy_yields = {f'Y_{n}': [] for n in range(1, nth_photon + 1)}
-
-    for _ in range(num_simulations):
-        protocol = Protocol(num_bits=10000, use_decoy_states=True, eavesdropper=True, mu=0.65, nu=0.08, dark_count_rate=10e-5, transmittance=0.356, signal_percentage=0.75, decoy_percentage=0.125, vacuum_percentage=0.125)
-        protocol.run_protocol()
-        for n in range(1, nth_photon + 1):
-            expected_yields[f'Y_{n}'].append(protocol.expected_yields[n - 1])
-            signal_yields[f'Y_{n}'].append(protocol.signal_state_yields[n - 1])
-            decoy_yields[f'Y_{n}'].append(protocol.decoy_state_yields[n - 1])
-
-    return expected_yields, signal_yields, decoy_yields
-
-def plot_yields_boxplot(signal_yields: dict, decoy_yields: dict, expected_yields: list):
-    """
-    Generates a box plot for expected signal and decoy yields (Y_n).
-
-    Args:
-        signal_yields (dict): Signal yields from multiple simulations.
-        decoy_yields (dict): Decoy yields from multiple simulations.
-        expected_yields (list): Expected yields from multiple simulations.
-    """
-    data = []
-    labels = []
-
-    for n in range(1, len(expected_yields) + 1):
-        data.append(expected_yields[f'Y_{n}'])
-        labels.append(f'Expected Y{n}')
-        data.append(signal_yields[f'Y_{n}'])
-        labels.append(f'Signal Y{n}')
-        data.append(decoy_yields[f'Y_{n}'])
-        labels.append(f'Decoy Y{n}')
-
-    # Create box plot
-    plt.figure(figsize=(10, 6))
-    plt.boxplot(data, showmeans=True, patch_artist=True)
-    plt.xticks(range(1, len(labels) + 1), labels, rotation=45)
-    plt.ylabel('Yield')
-    plt.title('Comparison of Expected and Measured Yields (Signal and Decoy)')
-    plt.grid(True, linestyle='--', alpha=0.7)
-    plt.tight_layout()
-    plt.show()
-
-def plot_single_run_yields_boxplot(protocol: Protocol, nth_photon: int):
-    """
-    Generates a box plot for the yields of a single run.
-
-    Args:
-        protocol (Protocol): The protocol instance after running.
-        nth_photon (int): Maximum number of photons (n) to analyze.
-    """
-    n_values = range(1, nth_photon + 1)
-    expected_yields = protocol.expected_yields[:nth_photon]
-    signal_yields = protocol.signal_state_yields[:nth_photon]
-    decoy_yields = protocol.decoy_state_yields[:nth_photon]
-
-    data = [expected_yields, signal_yields, decoy_yields]
-    labels = ['Expected Yields', 'Signal Yields', 'Decoy Yields']
-
-    plt.figure(figsize=(10, 6))
-    plt.boxplot(data, showmeans=True, patch_artist=True)
-    plt.xticks(range(1, len(labels) + 1), labels, rotation=45)
-    plt.ylabel('Yield')
-    plt.title('Yields for a Single Run (Signal and Decoy)')
-    plt.grid(True, linestyle='--', alpha=0.7)
-    plt.tight_layout()
-    plt.show()
-
-# Número de fotones (n) y simulaciones
-nth_photon = 4
+# Main configuration
+nth_photon = 5
 num_simulations = 100
 
-# # Ejecutar múltiples simulaciones
-# expected_yields, signal_yields, decoy_yields = run_multiple_simulations(nth_photon, num_simulations)
+def main():
+    print("BB84 Simulation Tool")
+    print("1. Run a single protocol execution")
+    print("2. Run multiple simulations")
+    print("3. Load saved results")
+    print("4. List saved simulations")
+    print("5. Exit")
+    
+    choice = input("Select an option: ")
 
-# # Generar gráfico de cajas
-# plot_yields_boxplot(signal_yields, decoy_yields, expected_yields)
+    if choice == "1":
+        # Run a single protocol execution
+        print("Enter protocol parameters:")
+        params = get_protocol_parameters()
+        
+        protocol = Protocol(num_bits=params['num_bits'], 
+                        use_decoy_states=params['use_decoy_states'], 
+                        eavesdropper=params['eavesdropper'], 
+                        mu=params['mu'], 
+                        nu=params['nu'], 
+                        dark_count_rate=params['dark_count_rate'], 
+                        channel_loss=params['channel_loss'],
+                        channel_length=params['channel_length'],
+                        receiver_loss=params['receiver_loss'],
+                        detection_efficiency=params['detection_efficiency'],
+                        signal_percentage=params['signal_percentage'], 
+                        decoy_percentage=params['decoy_percentage'], 
+                        vacuum_percentage=params['vacuum_percentage'])
 
-# Ejecutar una única corrida del protocolo
-protocol = Protocol(num_bits=100, use_decoy_states=True, eavesdropper=False, mu=0.65, nu=0.08, dark_count_rate=10e-5, transmittance=0.356, signal_percentage=0.75, decoy_percentage=0.125, vacuum_percentage=0.125)
-protocol.run_protocol()
+        protocol.run_protocol()
+        
+        print("\n--- Protocol Results ---")
+        print_protocol_results(protocol)
+        
+        expected, signal, decoy, params = convert_single_run_to_dict(protocol, nth_photon, params)
+        saved_file = save_simulation_results(expected, signal, decoy, params)
+        print(f"Results saved to: {saved_file}")
+    
+    elif choice == "2":
+        # Run multiple simulations
+        num = int(input(f"Number of simulations (default {num_simulations}): ") or num_simulations)
+        
+        print("Enter protocol parameters:")
+        params = get_protocol_parameters()
+        
+        print(f"Running {num} simulations. This may take some time...")
+        expected_yields, signal_yields, decoy_yields = run_multiple_simulations(nth_photon, num, params)
+        
+        # Show graph
+        plot_yields_boxplot(signal_yields, decoy_yields, expected_yields)
+        
+        # Add number of simulations to parameters
+        params['num_simulations'] = num
+            
+        saved_file = save_simulation_results(expected_yields, signal_yields, decoy_yields, params)
+        print(f"Results saved to: {saved_file}")
+    
+    elif choice == "3":
+        # Load saved results
+        files = list_saved_simulations()
+        if not files:
+            print("No saved simulations found.")
+            return True
+        
+        print("Available simulations:")
+        for i, file in enumerate(files):
+            print(f"{i+1}. {os.path.basename(file)}")
+        
+        file_idx = int(input("Select file number to load: ")) - 1
+        if 0 <= file_idx < len(files):
+            plot_from_saved_file(files[file_idx])
+        else:
+            print("Invalid selection.")
+    
+    elif choice == "4":
+        # List saved simulations
+        files = list_saved_simulations()
+        if not files:
+            print("No saved simulations found.")
+            return True
+        
+        print("Available simulations:")
+        list_saved_simulations(verbose=True)
+    
+    elif choice == "5":
+        print("Exiting...")
+        return False
+    
+    else:
+        print("Invalid option.")
+    
+    return True
 
-# Generar gráfico de yields n-fotónicos de una única corrida
-plot_single_run_yields_boxplot(protocol, nth_photon)
-
-print(f'Signal state gain: {protocol.signal_state_gain}')
-print(f'Decoy state gain: {protocol.decoy_state_gain}')
-print(f'Signal state efficiency: {protocol.signal_state_efficiency}')
-print(f'Decoy state efficiency: {protocol.decoy_state_efficiency}')
-print(f'Expected yields: {protocol.expected_yields}')
-print(f'Signal state yields: {protocol.signal_state_yields}')
-print(f'Decoy state yields: {protocol.decoy_state_yields}')
+# Execute the main menu
+if __name__ == "__main__":
+    import os
+    running = True
+    while running:
+        running = main()
