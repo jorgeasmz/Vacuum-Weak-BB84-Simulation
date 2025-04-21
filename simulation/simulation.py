@@ -26,8 +26,9 @@ def run_multiple_simulations(nth_photon: int, num_simulations: int, protocol_par
                             dark_count_rate=protocol_params['dark_count_rate'],
                             channel_loss=protocol_params['channel_loss'],
                             channel_length=protocol_params['channel_length'],
-                            receiver_loss=protocol_params['receiver_loss'],
-                            detection_efficiency=protocol_params['detection_efficiency'],                            
+                            receiver_loss=protocol_params['receiver_loss'], 
+                            detector_efficiency=protocol_params['detector_efficiency'],
+                            detector_error_rate=protocol_params['detector_error_rate'],           
                             signal_percentage=protocol_params['signal_percentage'], 
                             decoy_percentage=protocol_params['decoy_percentage'], 
                             vacuum_percentage=protocol_params['vacuum_percentage'])
