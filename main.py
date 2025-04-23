@@ -5,6 +5,7 @@ from utils.io_utils import *
 from utils.utils import *
 
 import matplotlib.pyplot as plt
+import time
 
 # Main configuration
 nth_photon = 5
@@ -24,6 +25,9 @@ def main():
         # Run a single protocol execution
         print("Enter protocol parameters:")
         params = get_protocol_parameters()
+        
+        # Iniciamos el cronómetro
+        start_time = time.time()
         
         protocol = Protocol(num_bits=params['num_bits'], 
                         use_decoy_states=params['use_decoy_states'], 
@@ -47,7 +51,11 @@ def main():
         
         expected, signal, decoy, params = convert_single_run_to_dict(protocol, nth_photon, params)
         saved_file = save_simulation_results(expected, signal, decoy, params)
+        
+        # Calculamos el tiempo transcurrido
+        elapsed_time = time.time() - start_time
         print(f"Results saved to: {saved_file}")
+        print(f"Execution completed in {elapsed_time:.2f} seconds")
     
     elif choice == "2":
         # Run multiple simulations
@@ -57,7 +65,15 @@ def main():
         params = get_protocol_parameters()
         
         print(f"Running {num} simulations. This may take some time...")
+        
+        # Iniciamos el cronómetro
+        start_time = time.time()
+        
+        # Ejecutamos las simulaciones
         expected_yields, signal_yields, decoy_yields = run_multiple_simulations(nth_photon, num, params)
+        
+        # Calculamos el tiempo transcurrido
+        elapsed_time = time.time() - start_time
         
         # Show graph
         plot_yields_boxplot(signal_yields, decoy_yields, expected_yields)
@@ -67,6 +83,7 @@ def main():
             
         saved_file = save_simulation_results(expected_yields, signal_yields, decoy_yields, params)
         print(f"Results saved to: {saved_file}")
+        print(f"All {num} simulations completed in {elapsed_time:.2f} seconds (average: {elapsed_time/num:.2f} s/sim)")
     
     elif choice == "3":
         # Load saved results
