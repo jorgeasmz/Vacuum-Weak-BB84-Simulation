@@ -1,7 +1,7 @@
 # -----------------------------------------------------------------------------
 # File Name: eavesdropper.py
 # Author: jorgeasmz
-# Date: 21/11/2024
+# Last Modified: 27/04/2025
 # Description: A class representing the eavesdropper in the BB84 protocol.
 # -----------------------------------------------------------------------------
 
@@ -9,7 +9,7 @@ from qiskit import QuantumCircuit, QuantumRegister, ClassicalRegister
 from .role import Role
 from protocol.state import State
 
-import random
+import numpy as np
 
 class Eavesdropper(Role):
     """
@@ -18,41 +18,47 @@ class Eavesdropper(Role):
 
     def __init__(self):
         super().__init__('Eavesdropper')
-        self.bases = []
-        self.measurement_results = []
-        self.forwarded_states = []
-        self.extracted_qubits = []
+        self.bases = None
+        self.key = None
+        self.forwarded_states = None
+        self.extracted_qubits = None
 
     def __str__(self):
         return (f"Eavesdropper:\n"
                 f"Bases: {self.bases}\n"
-                f"Measurement results: {self.measurement_results}\n"
-                f"Extracted qubits: {self.extracted_qubits}\n")
+                f"Key: {self.key}\n"
+                f"Extracted qubits: {len(self.extracted_qubits) if self.extracted_qubits is not None else 0}\n")
 
     def perform_action(self, states):
         """
         Eavesdropper performs photon number splitting attack.
 
         Args:
-            states (list): List of quantum states to be intercepted.
+            states (np.ndarray): Array of quantum states to be intercepted.
 
         Returns:
-            list[State]: List of quantum states after interception.
+            np.ndarray: Array of quantum states after interception.
         """
-        for state in states:
+        num_states = len(states)
+        self.forwarded_states = np.empty(num_states, dtype=object)
+        self.extracted_qubits = np.empty(num_states, dtype=object)
+        self.key = np.empty(num_states, dtype=object)
+        
+        for i, state in enumerate(states):
 
             if state.num_qubits == 0:
                 # Eve forwards the state to Bob without interference
-                self.extracted_qubits.append(None)
-                self.measurement_results.append('Empty')
+                self.extracted_qubits[i] = None
+                self.key[i] = 'Empty'
+                self.forwarded_states[i] = state
 
             elif state.num_qubits == 1:
                 # Eve blocks the single photon and sends a vacuum state to Bob
-                self.extracted_qubits.append(None)
-                self.measurement_results.append('Blocked')
-                state = State(bit_value=random.choice([0, 1]), 
-                              basis=random.choice([0, 1]), 
-                              state_type='vacuum')
+                self.extracted_qubits[i] = None
+                self.key[i] = 'Blocked'
+                self.forwarded_states[i] = State(bit_value=np.random.randint(0, 2), 
+                                                 basis=np.random.randint(0, 2), 
+                                                 state_type='vacuum')
 
             elif state.num_qubits > 1:
                 # Eve extracts one photon and sends n - 1 photons to Bob
@@ -66,20 +72,21 @@ class Eavesdropper(Role):
                 if state.basis == 1:
                     circuit.h(qr[0])
 
-                self.extracted_qubits.append({
+                self.extracted_qubits[i] = {
                     'qr': qr,
                     'cr': cr,
                     'circuit': circuit
-                })
-                self.measurement_results.append(None)
+                }
+                self.key[i] = None
 
+                # Modify the state to have one less qubit
                 state.num_qubits -= 1
                 state.qr = QuantumRegister(state.num_qubits, 'q')
                 state.cr = ClassicalRegister(state.num_qubits, 'c')
                 state.circuit = QuantumCircuit(state.qr, state.cr)
                 state.prepare_state()
-
-            self.forwarded_states.append(state)
+                
+                self.forwarded_states[i] = state
 
         return self.forwarded_states
 
@@ -88,19 +95,21 @@ class Eavesdropper(Role):
         Post-process the intercepted states based on sender's bases.
 
         Args:
-            sender_bases (list): Bases used by the sender to encode the states.
+            sender_bases (np.ndarray): Bases used by the sender to encode the states.
         """
-        for i, result in enumerate(self.measurement_results):
 
+        if self.bases is None:
+            self.bases = np.empty(len(sender_bases), dtype=int)
+        
+        for i, result in enumerate(self.key):
             eve_basis = sender_bases[i]
-            self.bases.append(eve_basis)
+            self.bases[i] = eve_basis
 
             if result is None:
-                # Eve measures the extracted photon in the basis Alice used
+                # Eavesdropper measures the extracted photon in the basis the sender used
                 extracted_qubit = self.extracted_qubits[i]
 
                 if extracted_qubit is not None:
-
                     qr = extracted_qubit['qr']
                     cr = extracted_qubit['cr']
                     circuit = extracted_qubit['circuit']
@@ -111,17 +120,20 @@ class Eavesdropper(Role):
 
                     if eve_basis == 1:
                         meas_circuit.h(qr[0])
+                        
+                    # Add measurement
+                    meas_circuit.measure(qr, cr)
 
                     # Simulate the measurement
                     from qiskit import transpile
                     from qiskit_aer import Aer
 
                     backend = Aer.get_backend('qasm_simulator')
-                    transpiled_circuits = transpile(meas_circuit, backend)
-                    job = backend.run(transpiled_circuits, shots=1)
+                    transpiled_circuit = transpile(meas_circuit, backend)
+                    job = backend.run(transpiled_circuit, shots=1)
                     result = job.result()
                     counts = result.get_counts(meas_circuit)
 
                     measured_bit = int(list(counts.keys())[0])
 
-                    self.measurement_results[i] = measured_bit
+                    self.key[i] = measured_bit

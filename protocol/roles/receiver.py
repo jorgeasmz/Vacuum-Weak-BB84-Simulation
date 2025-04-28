@@ -1,11 +1,13 @@
 # -----------------------------------------------------------------------------
 # File Name: receiver.py
 # Author: jorgeasmz
-# Date: 21/11/2024
+# Last Modified: 27/04/2025
 # Description: A class representing the receiver in the BB84 protocol.
 # -----------------------------------------------------------------------------
 
 from .role import Role
+
+import numpy as np
 
 class Receiver(Role):
     """
@@ -16,17 +18,18 @@ class Receiver(Role):
         Initialize the receiver.
 
         Args:
-            num_bits (int): Number of bits to be transmitted.
+            num_bits (int): Number of bits to receive.
         """
         super().__init__('Receiver')
+        self.num_bits = num_bits
         self.bases = self.random_bit_selection(num_elements=num_bits)
-        self.measurement_results = []
-        self.states = []
+        self.key = np.empty(num_bits, dtype=object)
+        self.states = np.empty(num_bits, dtype=object)
 
     def __str__(self):
         return (f"Receiver:\n"
                 f"Bases: {self.bases}\n"
-                f"Measurement results: {self.measurement_results}\n")
+                f"Key: {self.measurement_results}\n")
 
     def perform_action(self, states):
         """
@@ -35,10 +38,6 @@ class Receiver(Role):
         Args:
             states (list): List of quantum states to be measured
         """
-        i = 0
-        for state in states:
-            result = state.measure_state(self.bases[i])
-            self.measurement_results.append(result)
-            self.states.append(state)
-            i += 1
-            
+        for i, state in enumerate(states):
+            self.key[i] = state.measure_state(self.bases[i])
+            self.states[i] = state

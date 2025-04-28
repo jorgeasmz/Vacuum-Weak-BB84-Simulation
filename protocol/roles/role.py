@@ -1,13 +1,13 @@
 # -----------------------------------------------------------------------------
 # File Name: role.py
 # Author: jorgeasmz
-# Date: 21/11/2024
+# Last Modified: 27/04/2025
 # Description: A class representing a role in the BB84 protocol.
 # -----------------------------------------------------------------------------
 
 from protocol.config import Config
 
-import random
+import numpy as np
 
 class Role:
     """
@@ -20,45 +20,47 @@ class Role:
         """Perform the role's action."""
         raise NotImplementedError("This method should be implemented by subclasses")
     
-    def random_bit_selection(self, num_elements: int, seed: int = None) -> list:
+    def random_bit_selection(self, num_elements: int, seed: int = None) -> np.ndarray:
         """
-        Generate a list of random bits (0s and 1s) based on a seed.
+        Generate an array of random bits (0s and 1s) based on a seed.
         
         Args:
             seed (int): The seed for random number generation.
             num_elements (int): The number of elements to generate.
         
         Returns:
-            list: A list of random bits (0s and 1s).
+            np.ndarray: An array of random bits (0s and 1s).
         """
-        random.seed(seed)
-        return [random.choice([0, 1]) for _ in range(num_elements)]
+        if seed is not None:
+            np.random.seed(seed)
+        return np.random.randint(0, 2, size=num_elements)
     
-    def random_state_selection(self, num_elements: int, seed: int = None) -> list:
+    def random_state_selection(self, num_elements: int, seed: int = None) -> np.ndarray:
         """
-        Generate a list of random state types ('signal', 'decoy', 'vacuum') based on a seed.
+        Generate an array of random state types ('signal', 'decoy', 'vacuum') based on a seed.
         
         Args:
             seed (int): The seed for random number generation.
             num_elements (int): The number of elements to generate.
         
         Returns:
-            list: A list of random state types.
+            np.ndarray: An array of random state types.
         """
-        random.seed(seed)
+        if seed is not None:
+            np.random.seed(seed)
         
         config = Config.get_instance()
         signal_percentage = config.signal_percentage
         decoy_percentage = config.decoy_percentage
-
-        states_types = []
-        for _ in range(num_elements):
-            rand_val = random.random()
-            if rand_val < signal_percentage:
-                states_types.append('signal')
-            elif rand_val < signal_percentage + decoy_percentage:
-                states_types.append('decoy')
-            else:
-                states_types.append('vacuum')
         
-        return states_types
+        # Generate random values in one operation
+        rand_vals = np.random.random(num_elements)
+        
+        # Use vectorized operations to assign state types
+        states = np.empty(num_elements, dtype=object)
+        states[rand_vals < signal_percentage] = 'signal'
+        states[(rand_vals >= signal_percentage) & 
+               (rand_vals < signal_percentage + decoy_percentage)] = 'decoy'
+        states[rand_vals >= signal_percentage + decoy_percentage] = 'vacuum'
+        
+        return states

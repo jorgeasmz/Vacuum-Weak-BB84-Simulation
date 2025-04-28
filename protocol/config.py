@@ -1,7 +1,7 @@
 # -----------------------------------------------------------------------------
 # File Name: config.py
 # Author: jorgeasmz
-# Date: 21/11/2024
+# Last Modified: 27/04/2025
 # Description: A class to store the configuration of the protocol.
 # -----------------------------------------------------------------------------
 
@@ -11,9 +11,9 @@ class Config:
     def __new__(cls, 
                 mu=None, 
                 nu=None, 
-                dark_count_rate=None, 
-                detector_efficiency=None,
+                transmittance=None,
                 detector_error_rate=None,
+                dark_count_rate=None,
                 signal_percentage=None, 
                 decoy_percentage=None, 
                 vacuum_percentage=None):
@@ -22,9 +22,9 @@ class Config:
             cls._instance = super(Config, cls).__new__(cls)
             cls._instance.mu = mu
             cls._instance.nu = nu
-            cls._instance.dark_count_rate = dark_count_rate
-            cls._instance.detector_efficiency = detector_efficiency
+            cls._instance.transmittance = transmittance
             cls._instance.detector_error_rate = detector_error_rate
+            cls._instance.dark_count_rate = dark_count_rate
             cls._instance.signal_percentage = signal_percentage
             cls._instance.decoy_percentage = decoy_percentage
             cls._instance.vacuum_percentage = vacuum_percentage
@@ -52,6 +52,6 @@ class Config:
         elif state_type == 'decoy':
             return config.nu
         elif state_type == 'vacuum':
-            return config.dark_count_rate
+            return 0
         else:
             raise ValueError("Invalid state type")

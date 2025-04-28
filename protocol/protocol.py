@@ -1,7 +1,7 @@
 # -----------------------------------------------------------------------------
 # File Name: protocol.py
 # Author: jorgeasmz
-# Date: 21/11/2024
+# Last Modified: 27/04/2025
 # Description: A class to implement the Decoy States BB84 protocol.
 # -----------------------------------------------------------------------------
 
@@ -17,17 +17,18 @@ class Protocol:
     A class to implement the Decoy States BB84 protocol.
     """
     def __init__(self, 
-                 num_bits: int, 
-                 use_decoy_states: bool = False, 
+                 num_pulses: 1000000, 
                  eavesdropper: bool = False, 
+                 attack_type: str = 'PNS',
                  mu: float = 0.65, 
-                 nu: float = 0.08, 
-                 dark_count_rate: float = 10e-5, 
-                 channel_loss: float = 0.2, 
-                 channel_length: float = 20.0, 
+                 nu: float = 0.08,  
+                 alpha: float = 0.2, 
+                 l: float = 20.0, 
+                 channel_loss: float = 5.6,
                  receiver_loss: float = 3.5,
                  detector_efficiency: float = 0.10, 
-                 detector_error_rate: float = 0.01,
+                 detector_error_rate: float = 0.014,
+                 dark_count_rate: float = 1e-5,
                  signal_percentage: float = 0.75, 
                  decoy_percentage: float = 0.125, 
                  vacuum_percentage: float = 0.125):
@@ -35,41 +36,57 @@ class Protocol:
         Initialize the protocol.
         
         Args:
-            num_bits (int): Number of bits to be transmitted.
-            use_decoy_states (bool): Whether to use decoy states.
+            num_pulses (int): Number of pulses to be sent.
             eavesdropper (bool): Whether to include an eavesdropper.
             mu (float): Mean photon number for signal states.
             nu (float): Mean photon number for decoy states.
-            dark_count_rate (Y_0)(float): Probability of dark counts (false detections).
-            channel_loss (α)(float): Loss in the quantum channel in dB/km.
+            alpha (float): Loss in the quantum channel in dB/km.
             channel_length (l) (float): Length of the quantum channel in km.
-            receiver_loss (float): Loss in the receiver's side in dB.
+            channel_loss (float): Total loss in the quantum channel in dB.
+            receiver_loss (float): Total loss in the receiver's side in dB.
             detector_efficiency (η_D) (float): Efficiency of the detector.
             detector_error_rate (e_d) (float): Error rate of the detector.
+            dark_count_rate (Y_0)(float): Probability of dark counts (false detections).
             signal_percentage (float): Percentage of signal states.
             decoy_percentage (float): Percentage of decoy states.
             vacuum_percentage (float): Percentage of vacuum states.
         """
-        self.num_bits = num_bits
-        self.use_decoy_states = use_decoy_states
+        # Quantum channel transmittance
+        if channel_loss:
+            t_AB = 10**((-channel_loss)/10)
+        else:
+            t_AB = 10**((-alpha * l)/10)
+
+        t_B = 10**((-receiver_loss)/10) # Optical elements transmittance
+        eta_D = detector_efficiency # Detector efficiency
+        eta_Bob = t_B * eta_D # Reciever's side transmittance
+        
+        eta = t_AB * eta_Bob * signal_percentage # Overall transmittance
+        fraction = 0.9 # Fraction of transmited pulse energy in the BS attack
+
+        self.num_bits = num_pulses
         self.eavesdropper = eavesdropper
+        self.attack_type = attack_type
         self.mu = mu
         self.nu = nu
         self.dark_count_rate = dark_count_rate
-        self.transmittance = 10**(-(channel_loss * channel_length)/10 ) * (10**(-(receiver_loss)/10 ) * detector_efficiency)
+        self.transmittance = eta
+
+        if eavesdropper and attack_type == 'BS':
+            eta = eta * fraction
 
         # Initialize the shared configuration
         Config(mu=mu, 
-               nu=nu, 
-               dark_count_rate=dark_count_rate, 
-               detector_efficiency=detector_efficiency,
+               nu=nu,  
+               transmittance=eta,
                detector_error_rate=detector_error_rate,
+               dark_count_rate=dark_count_rate,
                signal_percentage=signal_percentage, 
                decoy_percentage=decoy_percentage, 
                vacuum_percentage=vacuum_percentage)
 
-        self.alice = Sender(num_bits, use_decoy_states)
-        self.bob = Receiver(num_bits)
+        self.alice = Sender(num_pulses)
+        self.bob = Receiver(num_pulses)
         self.eve = Eavesdropper() if eavesdropper else None
 
     def run_protocol(self):
@@ -89,22 +106,24 @@ class Protocol:
         # Reconcile keys
         self.reconcile_keys()
 
-        # Detect eavesdropper
-        self.detect_eavesdropper()
+        # Calculate QBER and state gain
+        self.signal_state_gain = self.state_gain('signal')
+        self.signal_state_qber = self.state_qber('signal')
+        self.decoy_state_gain = self.state_gain('decoy')
+        self.decoy_state_qber = self.state_qber('decoy')
     
     def reconcile_keys(self):
         """
         Reconcile the keys between Alice and Bob.
         """
-        reconciled_key = []
-        for i in range(self.num_bits):
-            if self.alice.bases[i] == self.bob.bases[i]:
-                reconciled_key.append(self.bob.measurement_results[i])
-        self.reconciled_key = reconciled_key
+        correct_bases = self.alice.bases == self.bob.bases
+        self.reconciled_key = self.bob.key[correct_bases]
 
     def state_gain(self, state_type: str = 'signal'):
         """
-        Calculate the state gain for a specific state tpye ('signal', 'decoy', or 'vacuum').
+        Calculate the state gain for a specific state type ('signal' or 'decoy').
+        
+        State gain is the ratio of detected pulses to the total number of pulses sent.
 
         Args:
             state_type (str): The type of state to calculate gain for.
@@ -112,52 +131,49 @@ class Protocol:
         Returns:
             float: The calculated gain for the specified state type.
         """
-        state_indices = [i for i, t in enumerate(self.alice.states_types) if t == state_type]
+        # Find indices of pulses with the specified state type
+        state_indices = np.where(self.alice.states_types == state_type)[0]
         total_state_pulses = len(state_indices)
-        detections = sum(1 for i in state_indices if self.bob.measurement_results[i] != 'No detection' and self.alice.bases[i] == self.bob.bases[i])
-
-        return detections / total_state_pulses if total_state_pulses > 0 else 0
-    
-    def state_efficiency(self, state_gain: float, state_type: str = 'signal'):
-        """
-        Calculate the state efficiency for a specific state type ('signal', 'decoy', 'vaccum').
-
-        Args:
-            state_type (str): The type of state to calculate efficiency for.
-
-        Returns:
-            float: The calculated efficiency for the specified state type.
-        """
-
-        Y_0 = self.dark_count_rate
-        Q = state_gain
-        mean_photon_number = Config.state_type_to_mean_photon_number(state_type)
         
-        return -np.log(np.abs(1 + Y_0 - Q)) / mean_photon_number
+        if total_state_pulses == 0:
+            return 0
+            
+        # Count detections where bases match
+        detections = 0
+        for i in state_indices:
+            if (self.bob.key[i] != 'No detection' and 
+                self.bob.key[i] != 'Wrong basis' and
+                self.alice.bases[i] == self.bob.bases[i]):
+                detections += 1
+                
+        return detections / total_state_pulses
     
-    def n_photon_state_yield(self, state_efficiency, n):
+    def state_qber(self, state_type: str = 'signal'):
         """
-        Calculate the yield of n-photon states.
+        Calculate the Quantum Bit Error Rate (QBER) for a specific state type ('signal' or 'decoy').
+        
+        QBER is the ratio of incorrect bits to the total number of bits.
 
         Args:
-            state_efficiency (float): The efficiency of the state.
-            n (int): The number of photons in the state.
+            state_type (str): The type of state to calculate QBER for.
 
         Returns:
-            float: The calculated yield of n-photon states.
+            float: The calculated QBER for the specified state type.
         """
-        return self.dark_count_rate + (1 - (1 - state_efficiency)**n)
-    
-    def detect_eavesdropper(self):
-        """
-        Detect the presence of an eavesdropper.
-        """
-        self.expected_yields = [self.n_photon_state_yield(self.transmittance, n) for n in range(1, 6)]
-
-        self.signal_state_gain = self.state_gain('signal')
-        self.signal_state_efficiency = self.state_efficiency(self.signal_state_gain, 'signal')
-        self.signal_state_yields = [self.n_photon_state_yield(self.signal_state_efficiency, n) for n in range(1, 6)]
-
-        self.decoy_state_gain = self.state_gain('decoy')
-        self.decoy_state_efficiency = self.state_efficiency(self.decoy_state_gain, 'decoy')
-        self.decoy_state_yields = [self.n_photon_state_yield(self.decoy_state_efficiency, n) for n in range(1, 6)]
+        # Find indices of pulses with the specified state type
+        state_indices = np.where(self.alice.states_types == state_type)[0]
+        total_state_pulses = len(state_indices)
+        
+        if total_state_pulses == 0:
+            return 0
+            
+        # Count errors where bases match
+        errors = 0
+        for i in state_indices:
+            if (self.bob.key[i] != 'No detection' and 
+                self.bob.key[i] != 'Wrong basis' and
+                self.alice.bases[i] == self.bob.bases[i]):
+                if self.alice.key[i] != self.bob.key[i]:
+                    errors += 1
+                    
+        return errors / total_state_pulses
