@@ -123,7 +123,7 @@ class Protocol:
         """
         Calculate the state gain for a specific state type ('signal' or 'decoy').
         
-        State gain is the ratio of detected pulses to the total number of pulses sent.
+        State gain is the ratio of detected pulses to the number of pulses with matching bases.
 
         Args:
             state_type (str): The type of state to calculate gain for.
@@ -133,26 +133,32 @@ class Protocol:
         """
         # Find indices of pulses with the specified state type
         state_indices = np.where(self.alice.states_types == state_type)[0]
-        total_state_pulses = len(state_indices)
+        print(len(state_indices))
         
-        if total_state_pulses == 0:
+        # Filter for pulses where bases match
+        matching_bases_indices = [i for i in state_indices if self.alice.bases[i] == self.bob.bases[i]]
+        total_matching_pulses = len(matching_bases_indices)
+        print(len(matching_bases_indices))
+        
+        if total_matching_pulses == 0:
             return 0
             
-        # Count detections where bases match
+        # Count valid detections
         detections = 0
-        for i in state_indices:
-            if (self.bob.key[i] != 'No detection' and 
-                self.bob.key[i] != 'Wrong basis' and
-                self.alice.bases[i] == self.bob.bases[i]):
+        for i in matching_bases_indices:
+            if self.bob.key[i] != 'No detection':
                 detections += 1
+
+        print(detections)
                 
-        return detections / total_state_pulses
-    
+        return detections / total_matching_pulses
+
     def state_qber(self, state_type: str = 'signal'):
         """
-        Calculate the Quantum Bit Error Rate (QBER) for a specific state type ('signal' or 'decoy').
+        Calculate the Quantum Bit Error Rate (QBER) for a specific state type.
         
-        QBER is the ratio of incorrect bits to the total number of bits.
+        QBER is the ratio of incorrect bits to the total number of detected bits
+        where bases match.
 
         Args:
             state_type (str): The type of state to calculate QBER for.
@@ -160,20 +166,21 @@ class Protocol:
         Returns:
             float: The calculated QBER for the specified state type.
         """
-        # Find indices of pulses with the specified state type
+        # Find indices of pulses with the specified state type and matching bases
         state_indices = np.where(self.alice.states_types == state_type)[0]
-        total_state_pulses = len(state_indices)
+        matching_bases_indices = [i for i in state_indices if self.alice.bases[i] == self.bob.bases[i]]
         
-        if total_state_pulses == 0:
-            return 0
-            
-        # Count errors where bases match
+        # Count detections and errors
+        detections = 0
         errors = 0
-        for i in state_indices:
-            if (self.bob.key[i] != 'No detection' and 
-                self.bob.key[i] != 'Wrong basis' and
-                self.alice.bases[i] == self.bob.bases[i]):
+        for i in matching_bases_indices:
+            if self.bob.key[i] != 'No detection':
+                detections += 1
                 if self.alice.key[i] != self.bob.key[i]:
                     errors += 1
                     
-        return errors / total_state_pulses
+        # Avoid division by zero
+        if detections == 0:
+            return 0
+                    
+        return errors / detections
