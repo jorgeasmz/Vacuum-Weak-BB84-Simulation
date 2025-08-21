@@ -2,3 +2,4 @@ matplotlib
 numpy
 qiskit
 qiskit-aer
+tqdm

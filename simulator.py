@@ -112,7 +112,7 @@ def main():
     
     # Fixed simulation parameters
     num_runs = 5
-    num_pulses = 100000
+    num_pulses = 100
     mu = 0.65
     nu = 0.08
     alpha = 0.2

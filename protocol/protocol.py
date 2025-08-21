@@ -133,12 +133,10 @@ class Protocol:
         """
         # Find indices of pulses with the specified state type
         state_indices = np.where(self.alice.states_types == state_type)[0]
-        print(len(state_indices))
         
         # Filter for pulses where bases match
         matching_bases_indices = [i for i in state_indices if self.alice.bases[i] == self.bob.bases[i]]
         total_matching_pulses = len(matching_bases_indices)
-        print(len(matching_bases_indices))
         
         if total_matching_pulses == 0:
             return 0
@@ -148,8 +146,6 @@ class Protocol:
         for i in matching_bases_indices:
             if self.bob.key[i] != 'No detection':
                 detections += 1
-
-        print(detections)
                 
         return detections / total_matching_pulses
 
